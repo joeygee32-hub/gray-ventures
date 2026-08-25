@@ -10,7 +10,7 @@ const submitData = async (data: Record<string, string>) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
-      } catch (err) { console.error("ERROR:", err); }
+  } catch (err) { console.error("ERROR:", err); }
 };
 
 const rawQuestions = [
@@ -52,39 +52,6 @@ const getLevel = (pct: number) => {
   if (pct >= 70) return { label: "Solid, with a few gaps", color: "#185FA5", bg: "#E6F1FB" };
   if (pct >= 55) return { label: "A work in progress (aren't we all)", color: "#BA7517", bg: "#FAEEDA" };
   return { label: "Room to grow, no shame in it", color: "#993C1D", bg: "#FAECE7" };
-};
-
-const insights: Record<string, Record<string, string>> = {
-  "Self Awareness": {
-    "You've basically got this figured out": "You know what you're feeling while you're feeling it, which is honestly rarer than it should be. You catch your own patterns before they catch you.",
-    "Solid, with a few gaps": "Most of the time you're tuned in to your own emotional weather. Every once in a while something sneaks up on you, but you recover fast.",
-    "A work in progress (aren't we all)": "You're getting better at naming what you feel, but sometimes you're three days deep into a mood before you realize what started it.",
-    "Room to grow, no shame in it": "You're often reacting before you've clocked why. The good news — this is the easiest thing to build with a little practice."
-  },
-  "Self Regulation": {
-    "You've basically got this figured out": "You feel things fully without letting them drive the car. That's a genuinely underrated skill.",
-    "Solid, with a few gaps": "You keep it together in most situations. High-pressure moments occasionally test you, but you find your footing.",
-    "A work in progress (aren't we all)": "Your feelings sometimes get a head start on your actions. A little more pause between the two would go a long way.",
-    "Room to grow, no shame in it": "Your reactions often move faster than your thinking does. Building in even a five second pause could change a lot."
-  },
-  Motivation: {
-    "You've basically got this figured out": "Your drive comes from inside, not from someone checking up on you. That's going to take you far.",
-    "Solid, with a few gaps": "You're generally self-motivated, though the occasional dead week happens to the best of us.",
-    "A work in progress (aren't we all)": "You do great with structure and deadlines, less great without them. Building your own structure is the next unlock.",
-    "Room to grow, no shame in it": "Motivation without a deadline attached is tough for you right now. Connecting your goals to something that actually matters to you personally will help more than any productivity hack."
-  },
-  Empathy: {
-    "You've basically got this figured out": "You actually sit with people in what they're feeling instead of rushing to fix it. People notice that about you.",
-    "Solid, with a few gaps": "You genuinely care and it shows, though sometimes your instinct to help outruns your instinct to just listen first.",
-    "A work in progress (aren't we all)": "You care, but you jump to advice a little quick sometimes. Try just listening for an extra thirty seconds before you respond next time.",
-    "Room to grow, no shame in it": "Other people's emotional stuff doesn't always land for you right away. Getting curious about the 'why' behind their reaction is a good place to start."
-  },
-  "Social Skills": {
-    "You've basically got this figured out": "You navigate people and awkward moments with more ease than you probably give yourself credit for.",
-    "Solid, with a few gaps": "You're generally comfortable in most social situations. The hard conversations still take a little extra nerve, understandably.",
-    "A work in progress (aren't we all)": "You've got decent instincts but you tend to dodge the harder conversations. That avoidance costs more than the conversation would.",
-    "Room to grow, no shame in it": "Conflict and unfamiliar social settings feel genuinely uncomfortable for you. That's extremely fixable with some low-stakes reps."
-  }
 };
 
 const introLines = [
@@ -214,29 +181,19 @@ export default function GrayEQ() {
     const catPcts: Record<string, number> = {};
     categories.forEach(c => { catPcts[c] = Math.round((catScores[c] / catMax[c]) * 100); });
     const overall = Math.round(Object.values(catPcts).reduce((a, b) => a + b, 0) / 5);
-    const breakdown = categories.map(c => ({ category: c, pct: catPcts[c], level: getLevel(catPcts[c]), insight: insights[c][getLevel(catPcts[c]).label] }));
+    const breakdown = categories.map(c => ({ category: c, pct: catPcts[c], level: getLevel(catPcts[c]) }));
     const strongest = breakdown.reduce((a, b) => a.pct > b.pct ? a : b);
     const growth = breakdown.reduce((a, b) => a.pct < b.pct ? a : b);
     let summary = "Your results are a genuinely interesting mix — some real strengths and some honest work-in-progress spots. Relatable, honestly.";
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/reflection", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 700, messages: [{ role: "user", content: `Write a personalized results reflection for a college student who just completed an emotional intelligence assessment focused on relationships, rejection, and social connection. Their name is ${name || "the respondent"}. Here are their five area scores as percentages (for your reference only, never state numbers): Self Awareness ${catPcts["Self Awareness"]}%, Self Regulation ${catPcts["Self Regulation"]}%, Motivation ${catPcts.Motivation}%, Empathy ${catPcts.Empathy}%, Social Skills ${catPcts["Social Skills"]}%.
-
-Do NOT mention any numbers, percentages, or the words "score," "evaluation," or "level." Do NOT present the five areas as a list or with labels/ratings attached to each one.
-
-Instead write ONE flowing reflection, 5-6 sentences total, that:
-- Weaves in a genuine specific observation about each of the five areas naturally within the prose, not as a list
-- Spends the most attention on their one or two weakest areas — name the actual pattern (not a label) and connect it directly to how rejection, disconnection, or being misread probably shows up for them in real relationships
-- For every area mentioned, especially the weaker ones, includes what growing in that specific area would actually look or feel like for them — a concrete forward-looking pull, not just a diagnosis. Someone reading this should feel curious and motivated to improve, not judged.
-- Ends on one grounded sentence of real hope that this is buildable, not fixed
-
-Tone: warm, direct, perceptive — like a smart friend telling you something true about yourself, not clinical, not jokey. Keep it tight — this should read fast, not like a report.` }] })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, overall, catPcts, strongestCategory: strongest.category, growthCategory: growth.category })
       });
       const data = await res.json();
-      if (data.content?.[0]?.text) summary = data.content[0].text;
-    } catch {}
+      if (data.text) summary = data.text;
+    } catch (err) { console.error("ERROR:", err); }
     setResults({ overall, catPcts, breakdown, strongest, growth, summary });
     setScreen("results");
   };

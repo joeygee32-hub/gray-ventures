@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 
-const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVjWMbutg0AIqV7WvAvHUidnfOQgNgCdLpFFX_3XxpwNb9L5e2r8cjUCWTr8_siYhOPQ/exec";
 
 const submitData = async (data: Record<string, string>) => {
   try {

@@ -100,6 +100,8 @@ function FeedbackForm({ name, scores }: { name: string; scores: Record<string, n
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async () => {
+    if (submitted) return;
+    setSubmitted(true);
     await submitData({
       name: name || "Anonymous",
       email: email || "not provided",
@@ -115,7 +117,6 @@ function FeedbackForm({ name, scores }: { name: string; scores: Record<string, n
       improvement: improve,
       oneWord: oneWord
     });
-    setSubmitted(true);
   };
 
   if (submitted) return (
